@@ -3,6 +3,7 @@
 //Interfaz del sistema operativo portable (POSIX)
 void main ()
 {
+ printf("Montecillo Sandoval Jose Alejandro ");
  printf ("The process ID is %d\n", getpid ());
  printf ("The parent process ID is %d\n", (int) getppid ());
  //sreturn 0;

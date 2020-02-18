@@ -5,6 +5,7 @@ void main() //Proceso inicial
 {
 	pid_t id_hijo;
 	//pid se puede representar como un enetero
+	printf("Montecillo Sandoval Jose Alejandro\n");
 	printf("1: El id del proceso main es %d\n", getpid() );
 	id_hijo = fork();
 	/* 
