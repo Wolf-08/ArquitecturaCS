@@ -11,34 +11,57 @@
 #include <signal.h>
 
 /* the port users will be connecting to */
-#define MYPORT 3490
+#define MYPORT 3490   
+//Este es el puerto por el que va escuhar el 
+//Servidor al cliente el mismo puerto debe 
+//Estar definido en ambos progrmas
+
+#define MAXDATASIZE 300
+//Tamño del buffer para los mensajes que aceptara el chat 
 
 /* how many pending connections queue will hold */
 #define BACKLOG 10
+//Conexiones que permite de clientes
 
 void sigchld_handler(int s){
   while(wait(NULL) > 0);
 }
+/*Esta funcion es para matar procesos zombies
+que se generan ya que se generan procesos hijos por cada conexion
+al servidor wait bloque al papa si aun no termina
+Se espera hasta que el valor devuelto sea -1 que es cuando no hay procesos hijos*/
 
 int main(int argc, char *argv[ ]){
   /* listen on sock_fd, new connection on new_fd */
   int sockfd, new_fd;
-
+  char buffer[MAXDATASIZE];
+  /*new_fd es para las nuevas conexiones y sockdf donde se hace la primera
+  conexion */
+  char bufferEnvia[MAXDATASIZE];
   /* my address information */
   struct sockaddr_in my_addr;
+  /*Con sockaddr_in podemos obtener mas informacion 
+  de la conexion la familia,el puerto,la ip.
+  Aqui estara toda la informacion del servidor*/
 
   /* connectors address information */
-  struct sockaddr_in their_addr;
+  struct sockaddr_in their_addr;/*Informacion del cliente*/
   int sin_size;
   struct sigaction sa;
   int yes = 1;
-
+  /*Esta esta la llamada al socket */
+  /*AF_INET para usar los protocolos de arpanet
+  Luego especificamos que queremos usar un socket de flujo 
+  Y el protocolo que se puede estblecer a 0 */
   if ((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+    /*Devuleve un valor para el descriptor de archivo si es -1 es un error */
     perror("Server-socket() error lol!");
     exit(1);
   }
   else
+    //Se ha realizado correctamente la conexion al servidor 
     printf("Server-socket() sockfd is OK...\n");
+
 
   if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
     perror("Server-setsockopt() error lol!");
@@ -49,15 +72,26 @@ int main(int argc, char *argv[ ]){
 
   /* host byte order */
   my_addr.sin_family = AF_INET;
+  /*Son atributos de la estructura my_addr que definimos 
+  le indicamos la familia que usara*/
 
-  /* short, network byte order */
+  /* EL puerto que usara con la variable MYPORT 
+  Htons convierne un host a variable de red */
   my_addr.sin_port = htons(MYPORT);
 
   /* automatically fill with my IP */
   my_addr.sin_addr.s_addr = INADDR_ANY;
+  /*ANADDR_ANY buca automaticamente nuestra IP */
+
+
   printf("Server-Using %s and port %d...\n", inet_ntoa(my_addr.sin_addr), MYPORT);
 
   /* zero the rest of the struct */memset(&(my_addr.sin_zero), '\0', 8);
+  /*Para llenar los demas datos de la estructurra usada para el servidro */
+
+  /*Para nombrar nuestro sokcet es decir asociar el socket con un puerto de la 
+  maquina, es por eso que tenemos el puntero a la estructura del puerto y a la 
+  longitus de la estructura */
   if(bind(sockfd, (struct sockaddr *)&my_addr, sizeof(struct sockaddr)) == -1){
     perror("Server-bind() error");
     exit(1);
@@ -65,6 +99,10 @@ int main(int argc, char *argv[ ]){
   else
     printf("Server-bind() is OK...\n");
 
+
+  /*sockfd es el descriptor devuelto por socket, esta funcion 
+  es usada si estamos esperando que haya conexiones a nuestra maquina
+  BACKLOG es el numero de conexiones permitidas que definimos anteriormente*/
   if(listen(sockfd, BACKLOG) == -1){
     perror("Server-listen() error");
     exit(1);
@@ -72,6 +110,7 @@ int main(int argc, char *argv[ ]){
 
   printf("Server-listen() is OK...Listening...\n");
   /* clean all the dead processes */
+   
 
   sa.sa_handler = sigchld_handler;
   sigemptyset(&sa.sa_mask);
@@ -85,29 +124,68 @@ int main(int argc, char *argv[ ]){
 
   /* accept() loop */
   while(1){
+    int length;
+    char* text;
+    int num_bytes_leidos=recv(new_fd,buffer,MAXDATASIZE-1,0);
+    /*Se llama a acept para aceptar las conexion entrantes despues de
+    listen sockfd es el descriptr y theiraddr ea para saber que nodo y desde 
+    donde se esta conectando. */
     sin_size = sizeof(struct sockaddr_in);
     if((new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size)) == -1){
       perror("Server-accept() error");
       continue;
+      /*new_fd son las nuevas conexion y son las que se usaran para 
+      send y recv*/
     }
     else
-      printf("Server-accept() is OK...\n");
+    printf("Server-accept() is OK...\n");
     printf("Server-new socket, new_fd is OK...\n");
     printf("Server: Got connection from %s\n", inet_ntoa(their_addr.sin_addr));
-
+    /*inet_ntoa convierte una cadena que contiene una IP a un entero y devuelve 
+    la direccion ip en ordenacion de bytes para redes por eso no se usa 
+    htonl()*/
     /* this is the child process */
-    if(!fork()){
-      /* child doesnt need the listener */
-      close(sockfd);
-      if(send(new_fd, "This is a test string from server!\n", 37, 0) == -1)
-        perror("Server-send() error lol!");
-      close(new_fd);
-      exit(0);
+    if(!fork()){ 
+    /*Aqui esta entrando al proceso hijo 
+    Que es el que atiende al cliente */
+    // if (read(new_fd,&length,sizeof(length))==0)
+    //  return 0;
+    // text = (char*)malloc (lengt );
+    // read(new_fd,text,length);
+    // printf("%s\n",text);
+    // printf("BYTES LEIDOS=%d\n",num_bytes_leidos);
+    // buffer[num_bytes_leidos] = '\0';
+    // printf("Texto recibido= %s\n",buffer);
+    //   /* child doesnt need the listener */
+    close(sockfd);
+    printf("Esperando un mensaje del cliente\n");
+    
+    int recibido;
+    if((recibido= recv(new_fd,buffer,sizeof(buffer),0)) == -1)
+    {
+      perror("Error en el mensaje recibido");
+      exit(1);
     }
-    else
+    else {
+    buffer[recibido]= '\0';
+    printf("El mensaje del cliente es %s\n",buffer);
+    //close(new_fd);
+    //exit(0);
+    }
+    printf("Mensaje para el cliente:\n");
+    gets(bufferEnvia);
+    int len;
+    if((len=send(new_fd,bufferEnvia,strlen(bufferEnvia)+1,0))== -1)
+    {
+      perror("Error en el mensaje enviado");
+      exit(1);
+    }
+    printf("%d bytes enviado ",len);
+    }
+    else 
       printf("Server-send is OK...!\n");
 
-    /* parent doesnt need this */
+    /* Una vez terminadas las peticiones se cierra el padre tambien */
     close(new_fd);
     printf("Server-new socket, new_fd closed successfully...\n");
   }

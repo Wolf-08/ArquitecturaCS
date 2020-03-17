@@ -1,0 +1,31 @@
+Notas clase
+Arquitectura Cliente Sservidor 
+
+hots          =!           servidor 
+hardware                    Proporciona un servicio 
+Contiene el         
+servidor 
+Sistema 
+computadora 
+nodo
+-----------------------------
+Son procesos que pueden ejecutarse en el mismo host 
+2  16 = 65536 
+
+IANA.org = Organizacion que asigna numeros de puertos 
+En unix los puertos inferiores a 1024 estan reservados. EL resto 
+se pueden usar libremente. 
+
+/etc/services 
+
+132.248. --Conexiones de la UNAM 
+-----------------------------------------
+Proceso de Creación de Socket
+1. EL servidor crea un socket sin nombre
+2. EL proceso cliente crea un proceso sin nombre 
+3. El proceso cliente realiza un peticion de conexion al socket servidor 
+4. EL cliente realiza la conexion a tra vez de su socket mientras el proceso servidor mantiene el socker servidor original con nomnre
+
+Cuando hay muchos clientes el proceso padre hace el fork y ahi va 
+creando hijos para atender los procesos cliente.
+

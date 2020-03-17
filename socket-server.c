@@ -22,7 +22,7 @@ int server (int client_socket)
   /* Read the text itself, and print it. */
   read (client_socket, text, length);
   /*En esta parte read verifica que client_socket sea un descriptor de archivo y en text crea el buffer del tamaño reservado con malloc anteriormente, y lenght es el tamaño de bits que se van a leer */
-  printf("Montecillo Sandoval Jose Alejandro\n ");
+  //printf("Montecillo Sandoval Jose Alejandro\n ");
   printf ("%s\n", text);
   /* If the client sent the message "quit," we're all done. */
   if (!strcmp (text, "quit")) /*strcmp verifica que la cadena enviado por el cliente no sea quit si es quit termina el progrma liberando la memoria si no es quit sigue enviando un 1 para mantener el ciclo while*/
