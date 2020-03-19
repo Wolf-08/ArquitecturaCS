@@ -65,7 +65,9 @@ int main(int argc, char *argv[ ]){
     //Se ha realizado correctamente la conexion al servidor 
     printf("Server-socket() sockfd is OK...\n");
 
-
+  /*Recibe el descriptor ,para indicar que queremos usar opciones de socket
+  Mandamos sol_sockter y so_reuseaddr es para indicar que las direcciones 
+  proporcionadas por bind puedan ser reutilizadas para que pueda sopartar mas clientes*/
   if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int)) == -1){
     perror("Server-setsockopt() error lol!");
     exit(1);
@@ -111,11 +113,17 @@ int main(int argc, char *argv[ ]){
     exit(1);
   }
   printf("Server-listen() is OK...Listening...\n");
-  /* clean all the dead processes */
-  sa.sa_handler = sigchld_handler;
-  sigemptyset(&sa.sa_mask);
-  sa.sa_flags = SA_RESTART;
-  if(sigaction(SIGCHLD, &sa, NULL) == -1){
+  /* Usamos signation para hacer una llamada al sistema
+  y con sa_handler para hacer la union con nuestra funcion que 
+  es la encargada de hacer esperar al padre hasta que termine el hijo 
+  Especificamos las señales que deben bloquearse y con la bandera restart indicamos que 
+  se pueda reiniciar el proceso  
+  A la funcion para verificar que no hay mas procesos mandamos 
+  sigchld donde obtine el id del proceso y la direccion de la estructura si devuelve -1 hay un error*/
+  sa.sa_handler = sigchld_handler;  /*Sirve para matar procesos zombie*/
+  sigemptyset(&sa.sa_mask);         
+  sa.sa_flags = SA_RESTART;         
+  if(sigaction(SIGCHLD, &sa, NULL) == -1){ 
     perror("Server-sigaction() error");
     exit(1);
   }
