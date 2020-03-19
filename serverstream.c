@@ -177,7 +177,7 @@ int main(int argc, char *argv[ ]){
     else
     printf("Todo funciono bien");
     close(new_fd);
-   
+  }
   close(sockfd);
   return 0;
 }
