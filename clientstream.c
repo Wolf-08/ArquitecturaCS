@@ -11,20 +11,17 @@
 // the port client will be connecting to
 #define PORT 3490
 // max number of bytes we can get at once
-#define MAXDATASIZE 300
+#define MAXDATASIZE 1024
 /*Esscritura del cliente*/
-void write_text (int socket_fd,const char* text)
-{
-  int length = strlen (text) -1 ;
-  write(socket_fd,&length,sizeof(length));
-
-  write(socket_fd,text,length);
-}
 int main(int argc, char *argv[]){
-  int socket_fd, numbytes;
-  char bufEnviar[MAXDATASIZE];
-  char bufRecibir[MAXDATASIZE];
+  int sockfd, numbytes;
   struct hostent *he;
+	//declaraciones nuevas
+	char buf[MAXDATASIZE]; //Para recibir mensajes 
+  char enviar[MAXDATASIZE], recibir[MAXDATASIZE];
+  // connectors address information
+  struct sockaddr_in their_addr;
+  
   /*Esta es la estructura que recibira informacion
   del nodo remoto */
 
@@ -34,13 +31,12 @@ int main(int argc, char *argv[]){
   lista de direcciones del nombre del servidor */
 
   // connectors address information
-  struct sockaddr_in their_addr;
+  //struct sockaddr_in their_addr;
   /*Sobre la informacion de cliente 
   y servidor  */
   // if no command line argument supplied
   if(argc != 2){
     fprintf(stderr, "Client-Usage: %s host_servidor\n", argv[0]);
-
     // just exit
     exit(1);
   }
@@ -54,7 +50,7 @@ int main(int argc, char *argv[]){
   else
     printf("Client-The remote host is: %s\n", argv[1]);
   /*Se crea el socket al igual que en el servidor */
-  if((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
+  if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) == -1){
     perror("socket()");
     exit(1);
   }
@@ -63,6 +59,7 @@ int main(int argc, char *argv[]){
 
   /*Se llenan los demas datos de la estructura 
   para poder hacer la conexion */
+
   // host byte order
   their_addr.sin_family = AF_INET;
   // short, network byte order
@@ -75,41 +72,39 @@ int main(int argc, char *argv[]){
 
   // zero the rest of the struct
   memset(&(their_addr.sin_zero), '\0', 8);
+  //bzero((char *)&their_addr,sizeof(their_addr));
+
   /*Connect se usa igual que en el servidro */
-  if(connect(socket_fd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1){
+  if(connect(sockfd, (struct sockaddr *)&their_addr, sizeof(struct sockaddr)) == -1){
     perror("connect()");
     exit(1);
   }
   else
     printf("Client-The connect() is OK...\n");
-
-  // if((numbytes = recv(socket_fd, bufEnviar, MAXDATASIZE-1, 0)) == -1){
+  
+  //Recibir mensaje de bienvenida
+  // if ((numbytes=recv(sockfd,buf,MAXDATASIZE-1,0)) == -1){
   //   perror("recv()");
   //   exit(1);
-  // }
-  // else
-  //   printf("Client-The recv() is OK...\n");
-  // int enviado=send(socket_fd, "This is a test string from server!\n", 37, 0);
+  //   }
+  // printf("%s\n",buf);
+  while(1){
 
-  // printf("enviado= %d\n",enviado);
-  // bufEnviar[numbytes] = '\0';
-  // printf("Client-Received: %s", bufEnviar);
-  printf("Ingrese mensaje al servidor:\n");
-  gets(bufEnviar);
-  int len=send(socket_fd,bufEnviar,strlen(bufEnviar)+1,0);
-  printf("%d bytes enviado ",len);
-  int recibido;
-    if((recibido= recv(socket_fd,bufRecibir,sizeof(bufRecibir),0)) == -1)
-    {
-      perror("Error en el mensaje recibido");
-      exit(1);
+    printf("Escribir mensaje: ");
+    scanf("%*c%[^\n]",enviar);
+    send(sockfd,enviar,MAXDATASIZE,0);
+    if(strcmp(enviar,"salir")==0){
+      break;
     }
-    bufRecibir[recibido]= '\0';
-    printf("El mensaje del cliente es %s\n",bufRecibir);
-    //close(socket_fd);
-    //exit(0);
-  
-  printf("Client-Closing sockfd\n");
-  close(socket_fd);
+ //El cliente recibe el mensaje del servidor
+    
+    numbytes=recv(sockfd,buf,MAXDATASIZE-1,0);
+    if(strcmp(buf,"salir")==0){
+      break;
+    }
+    buf[numbytes]='/0';
+    printf("Servidor: %s\n",buf);
+    }
+  close(sockfd);
   return 0;
 }

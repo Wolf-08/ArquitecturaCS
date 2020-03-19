@@ -16,13 +16,12 @@
 //Servidor al cliente el mismo puerto debe 
 //Estar definido en ambos progrmas
 
-#define MAXDATASIZE 300
+#define MAXDATASIZE 1024
 //Tamño del buffer para los mensajes que aceptara el chat 
 
 /* how many pending connections queue will hold */
 #define BACKLOG 10
 //Conexiones que permite de clientes
-
 void sigchld_handler(int s){
   while(wait(NULL) > 0);
 }
@@ -34,10 +33,14 @@ Se espera hasta que el valor devuelto sea -1 que es cuando no hay procesos hijos
 int main(int argc, char *argv[ ]){
   /* listen on sock_fd, new connection on new_fd */
   int sockfd, new_fd;
-  char buffer[MAXDATASIZE];
+  char enviar[MAXDATASIZE]; //Para enviar el primer mensaje
+	char enviar2[MAXDATASIZE];  //Para el chat 
+  char buf[MAXDATASIZE]; //Para recibir mensajes
+	int inicio=0;
+	int bytesE; 
+	int bytesS; //variable para cada ciclo de lectura y escritura
   /*new_fd es para las nuevas conexiones y sockdf donde se hace la primera
   conexion */
-  char bufferEnvia[MAXDATASIZE];
   /* my address information */
   struct sockaddr_in my_addr;
   /*Con sockaddr_in podemos obtener mas informacion 
@@ -107,11 +110,8 @@ int main(int argc, char *argv[ ]){
     perror("Server-listen() error");
     exit(1);
   }
-
   printf("Server-listen() is OK...Listening...\n");
   /* clean all the dead processes */
-   
-
   sa.sa_handler = sigchld_handler;
   sigemptyset(&sa.sa_mask);
   sa.sa_flags = SA_RESTART;
@@ -121,12 +121,8 @@ int main(int argc, char *argv[ ]){
   }
   else
     printf("Server-sigaction() is OK...\n");
-
   /* accept() loop */
   while(1){
-    int length;
-    char* text;
-    int num_bytes_leidos=recv(new_fd,buffer,MAXDATASIZE-1,0);
     /*Se llama a acept para aceptar las conexion entrantes despues de
     listen sockfd es el descriptr y theiraddr ea para saber que nodo y desde 
     donde se esta conectando. */
@@ -138,56 +134,42 @@ int main(int argc, char *argv[ ]){
       send y recv*/
     }
     else
-    printf("Server-accept() is OK...\n");
+      printf("Server-accept() is OK...\n");
     printf("Server-new socket, new_fd is OK...\n");
     printf("Server: Got connection from %s\n", inet_ntoa(their_addr.sin_addr));
     /*inet_ntoa convierte una cadena que contiene una IP a un entero y devuelve 
     la direccion ip en ordenacion de bytes para redes por eso no se usa 
-    htonl()*/
     /* this is the child process */
     if(!fork()){ 
-    /*Aqui esta entrando al proceso hijo 
-    Que es el que atiende al cliente */
-    // if (read(new_fd,&length,sizeof(length))==0)
-    //  return 0;
-    // text = (char*)malloc (lengt );
-    // read(new_fd,text,length);
-    // printf("%s\n",text);
-    // printf("BYTES LEIDOS=%d\n",num_bytes_leidos);
-    // buffer[num_bytes_leidos] = '\0';
-    // printf("Texto recibido= %s\n",buffer);
-    //   /* child doesnt need the listener */
-    close(sockfd);
-    printf("Esperando un mensaje del cliente\n");
-    
-    int recibido;
-    if((recibido= recv(new_fd,buffer,sizeof(buffer),0)) == -1)
-    {
-      perror("Error en el mensaje recibido");
-      exit(1);
+      //close(sockfd);/*El hijo no lo necesita*/
+      /*Codigo para el chat */
+      //Envia mensaje de conexion 
+      // printf("------SESION INICIADA------\n");
+      //printf("CLIENTE CONECTADO\n");
+      //printf("El cliente dijo: %s\n",enviar);
+      //El servidor espera el primer mensaje
+      if((bytesE=recv(new_fd,buf,MAXDATASIZE-1,0))==-1)
+        perror("recv()");
+      if(strcmp(&buf,"salir")==0){
+        break;
+      }
+      buf[bytesE] = '/0';
+      printf("Cliente: %s\n",buf);
+ 
+    //El cliente recibe el mensaje del servidor
+      printf("Escribir mensaje: ");
+      scanf("%*c%[^\n]",enviar2);
+      if((bytesS=send(new_fd,enviar2,MAXDATASIZE,0))==-1)
+        perror("send()");
+      if(strcmp(enviar2,"salir")==0){
+        break;
+        }
+      /*Codigo para el chat */
     }
-    else {
-    buffer[recibido]= '\0';
-    printf("El mensaje del cliente es %s\n",buffer);
-    //close(new_fd);
-    //exit(0);
-    }
-    printf("Mensaje para el cliente:\n");
-    gets(bufferEnvia);
-    int len;
-    if((len=send(new_fd,bufferEnvia,strlen(bufferEnvia)+1,0))== -1)
-    {
-      perror("Error en el mensaje enviado");
-      exit(1);
-    }
-    printf("%d bytes enviado ",len);
-    }
-    else 
-      printf("Server-send is OK...!\n");
-
-    /* Una vez terminadas las peticiones se cierra el padre tambien */
+    else
+    printf("Todo funciono bien");
     close(new_fd);
-    printf("Server-new socket, new_fd closed successfully...\n");
-  }
+   
+  close(sockfd);
   return 0;
 }
